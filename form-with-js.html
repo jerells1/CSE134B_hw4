@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Form</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            --background-color: #01baef;
+            --form-color: #0CBABA;
+            --input-color: #0085AA;
+            --dark-form-color: #00035e;
+            --dark-background-color: black;
+            --dark-text-color: #7b7dad;
+            font-family: systemui, 'sans-serif';
+        }
+        main {
+            display: flex;
+            height: 100vh;
+            width: auto;
+            margin: auto;
+            background-color: var(--form-color);
+        }
+
+        main:has(#dark-mode-toggle:checked) {
+            background-color: var(--dark-background-color);
+        }
+
+        form:has(#dark-mode-toggle:checked) {
+            background-color: var(--dark-form-color);
+            color: var(--dark-text-color);
+        }
+
+        form {
+            display: block;
+            border-style: solid;
+            background-color: var(--background-color);
+            border-radius: 10px;
+            width: 30vw;
+            height: auto;
+            max-width: 600px;
+            margin: auto;
+            padding: 10px;
+            text-align: center;
+            color: white;
+            border-color: transparent;
+            #input {
+                display: grid;
+                width: 80%;
+                grid-template-columns: auto;
+                margin: 10px auto;
+                place-items: center;
+                gap: 10px;
+
+            }
+            label {
+                font-weight: bold;
+            }
+            input {
+                width: 200px;
+                height: auto;
+                text-align: center;
+                background-color: var(--input-color) ;
+                border-style: none;
+                border-radius: 5px;
+            }
+            textarea {
+                resize: vertical;
+                width: 200px;
+                background-color: var(--input-color);
+                border-style: none;
+                border-radius: 5px;
+            }
+            input, textarea {
+                color: white;
+            }
+            button {
+                margin: 10px;
+                padding: 10px;
+                background-color: var(--input-color);
+                border: none;
+                border-radius: 10px;
+                color: white;
+                font-size: 1.2rem;
+                font-weight: bold;
+                width: 100%;
+            }
+        }
+        .illegal-char {
+            background-color: red !important;
+        }
+        .warning {
+            color: red;
+        }
+
+        output {
+            display: none;
+        }
+
+        
+    </style>
+</head>
+<body>
+    <main>
+        <form action="https://httpbin.org/post" method="POST" id="contact">
+            <h1>Contact Form</h1>
+            <input type="checkbox" id="dark-mode-toggle" name="dark-mode-toggle" hidden>
+            <label class="toggle-switch" for="dark-mode-toggle">
+                switch theme
+            </label>
+            <div id="input">
+                <label for="fname">First Name:</label>
+                <input type="text" id="fname" name="fname" minlength="2" maxlength="15" pattern="\b[A-Z][A-Za-z]*" required>
+
+                <label for="lname">Last Name:</label>
+                <input type="text" id="lname" name="lname" pattern="\b[A-Z][A-za-z]*" minlength="2" maxlength="15" required>
+
+                <label for="email">Email:</label>
+                <input id="email" type="email" name="email" required>
+
+                <label for="comments">Comments:</label>
+                <textarea maxlength="150" name="comments" id="comments"></textarea>
+
+                <input name="form_errors" type="hidden" id="form-errors">
+                <p id="charLeft">150 characters remaining</p>
+            </div>
+            <output id="error"name="error">Not Valid Content</output>
+            <output id="success" name="success">Valid Content</output>
+            <button id="submit" type="submit">Submit</button>
+            
+        </form>
+    </main>
+    <script>
+        const fname = document.getElementById("fname");
+        const lname = document.getElementById("lname");
+        const email = document.getElementById("email");
+        const comments = document.getElementById("comments");
+        const submit = document.getElementById("submit");
+        const formErrors = document.getElementById("form-errors");
+        const contact = document.getElementById("contact");
+        const success = document.getElementById("success");
+        const error = document.getElementById("error");
+        const inputs = document.querySelectorAll("input");
+        let isValid = null;
+        const form_errors = [];
+
+        function checkName(event) {
+            const el = event.target;
+            if(!el.checkValidity()) {
+                el.classList.add("illegal-char");
+            }
+            else {
+                el.classList.remove("illegal-char");
+            }
+            if(el.validity.tooLong) {
+                el.setCustomValidity("Name must be less than 15 characters long");
+            }
+            else if(el.validity.patternMismatch) {
+                if(el.value.charAt(0) === el.value.charAt(0).toUpperCase()) {
+                    el.setCustomValidity("Illegal character");
+                }
+                else {
+                    el.setCustomValidity("Must start with uppercase");
+                }
+            }
+            else if(el.validity.tooShort) {
+                el.setCustomValidity("Name must be at least 2 characters long");
+            }
+            else {
+                el.setCustomValidity("");
+                el.classList.remove("illegal-char");
+            }
+            el.reportValidity();
+        }
+
+        function checkEmail() {
+            const el = event.target;
+            const regex = /(^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$)/;
+            if(!el.value.match(regex)) {
+                el.classList.add("illegal-char");
+                
+            }
+            else {
+                el.classList.remove("illegal-char");
+                
+            }
+        }
+
+        function checkComment() {
+            const el = event.target;
+            let curLength = el.textLength;
+            const maxLength = el.getAttribute('maxLength');
+            let remaining = maxLength - curLength;
+
+            if(remaining < 15) {
+                charLeft.classList.add('warning');
+            }
+            else {
+                charLeft.classList.remove('warning');
+            }
+            charLeft.innerText = `${remaining} characters remaining`;
+            
+
+        }
+        
+        function addErrors() {
+            const el = event.target;
+            if(!fname.checkValidity()) {
+                form_errors.push([fname.id,"value: " +fname.value,fname.validationMessage]);
+            }
+            if(!lname.checkValidity()) {
+                form_errors.push([lname.id,"value: " + lname.value,lname.validationMessage]);
+            }
+            if(!email.checkValidity()) {
+                form_errors.push([email.id,"value: " +email.value,email.validationMessage]);
+            }
+            if(!comments.checkValidity()) {
+                form_errors.push([comments.id,"value: " +comments.value,comments.validationMessage]);
+            }
+
+            formErrors.value = JSON.stringify(form_errors);
+        }
+
+        function init() {
+            fname.addEventListener("input", checkName);
+            lname.addEventListener("input",checkName);
+            email.addEventListener("input",checkEmail);
+            comments.addEventListener("input",checkComment);
+            contact.addEventListener("click",addErrors);
+            inputs.forEach(element => {
+                element.addEventListener("blur",(event) => {
+                    console.log(event.target.validity);
+                    if(event.target.validity.valid) {
+                        success.style.display = "block";
+                        error.style.display = "none";
+                    }
+                    else {
+                        success.style.display = "none";
+                        error.style.display = "block";
+                    }
+                })
+            })
+
+
+
+
+        }
+
+        window.addEventListener("load", init);
+
+    </script>
+</body>
+</html>
+
+
